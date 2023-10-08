@@ -1,7 +1,6 @@
 from flask import Flask
 from sqlalchemy.orm import sessionmaker
 from app.models import engine
-from pymongo import MongoClient
 
 
 app = Flask(__name__)

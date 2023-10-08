@@ -1,18 +1,31 @@
-from flask import Blueprint, jsonify, request, render_template, redirect
+from flask import Blueprint, jsonify, request, abort
 from app.middlewares import token_required
 from app.models import User
 from app.inicial import session
 from werkzeug.security import generate_password_hash
-
+from flask_cors import CORS
 
 cliente_api = Blueprint('cliente_api', __name__, template_folder='templates')
 
-# Aqui sera a api do cliente
+
+"""
+Esta e a api do cliente, as funcoes de crud (create, read, update, delete), 
+O CORS funciona para permitir o front-end react.js consiga fazer a requisicao via Axios para nossa api.
+"""
+
+CORS(cliente_api, resources={r"/user/*": {"origins": "http://localhost:3000"}})
 
 
 @cliente_api.route('/user/<int:id>', methods=['GET'])
 @token_required
 def um_cli(current_user, id):
+    """
+    Pega um cliente no banco de dados
+
+    :param User current_user: dados do usuario decodificado
+    :param int id: Retorna o id colocado na rota
+    :return: json
+    """
     user = session.query(User).filter_by(id=id).first()
 
     if not user:
@@ -21,7 +34,6 @@ def um_cli(current_user, id):
     user_data = {}
     user_data['id'] = user.id
     user_data['name'] = user.name
-    user_data['endereco'] = user.endereco
     user_data['age'] = user.age
     user_data['email'] = user.email
 
@@ -31,15 +43,52 @@ def um_cli(current_user, id):
 @cliente_api.route('/user/<int:id>', methods=['PUT'])
 @token_required
 def att_cli(current_user, id):
-    user_usuario = session.query(User).filter_by(id=id).first()
 
-    if not user_usuario:
-        return jsonify({'message': 'Usuario nao encontrado'})
+    """
+    Atualiza dados do cliente no banco de dados
 
-    user_usuario.email = request.json['email']
-    user_usuario.name = request.json['name']
-    user_usuario.endereco = request.json['endereco']
-    user_usuario.age = request.json['age']
+    :param User current_user: dados do usuario decodificado
+    :param int id: Retorna o id colocado na rota
+    :return: json
+    """
+
+
+    user = session.query(User).filter_by(email=current_user.email).first()
+    if not user:
+        return abort(404)
+
+    id_pedido = session.query(User).filter_by(id=id).first()
+
+    data_json = request.get_json()
+    
+    if not data_json:
+        return jsonify({'message': 'Nenhum campo pode ficar vazio'})
+
+    if not id_pedido:
+        return jsonify({'message': 'Não encontrado usuario'})
+
+    # status preparando...
+    if not data_json['email'] or data_json['email'] == '':
+        id_pedido.email = id_pedido.email
+
+    else:
+        id_pedido.email = data_json['email']
+
+    # status enviado...
+    if not data_json['name']:
+        id_pedido.name = id_pedido.name
+
+    else:
+        id_pedido.name = data_json['name']
+
+    # status entregue
+    if not data_json['age'] or data_json['age'] == '':
+        id_pedido.age = id_pedido.age
+
+    else:
+        id_pedido.age = data_json['age']
+
+    
 
     session.commit()
 
@@ -49,6 +98,19 @@ def att_cli(current_user, id):
 @cliente_api.route('/user/<int:id>', methods=['DELETE'])
 @token_required
 def deletar_cli(current_user, id):
+
+    """
+    Deleta a conta de um cliente do banco de dados
+
+    :param User current_user: dados do usuario decodificado
+    :param int id: Retorna o id colocado na rota
+    :return: json
+    """
+
+    user = session.query(User).filter_by(email=current_user.email).first()
+    if not user:
+        return abort(404)
+
     id_cli = session.query(User).filter_by(id=id).first()
 
     if not id_cli:
@@ -56,32 +118,47 @@ def deletar_cli(current_user, id):
 
     session.delete(id_cli)
     session.commit()
-    return jsonify({'message': 'Usuario deletado'})
+    return jsonify({'info_message': 'Usuario deletado'})
 
 
 @cliente_api.route('/user', methods=['GET'])
 @token_required
 def todos_cli(current_user):
-    clientes = session.query(User).all()
-    if not clientes:
-        return jsonify({'message': 'no users'})
+
+    """
+    Pega  dados do cliente logado
+
+    :param User current_user: Dados do usuario decodificado
+    :return: json
+    """
+
+    user = session.query(User).filter_by(email=current_user.email).first()
+    if not user:
+        return abort(404)
 
     output = []
 
-    for user in clientes:
-        user_data = {}
-        user_data['id'] = user.id
-        user_data['name'] = user.name
-        user_data['age'] = user.age
-        user_data['endereco'] = user.endereco
-        user_data['email'] = user.email
-        output.append(user_data)
+    
+    user_data = {}
+    user_data['id'] = user.id
+    user_data['name'] = user.name
+    user_data['age'] = user.age
+    user_data['email'] = user.email
+    output.append(user_data)
 
     return jsonify({'users': output})
 
 
 @cliente_api.route('/user', methods=['POST'])
 def criar_cli():
+
+    """
+    Cria uma conta pro cliente.
+
+    :return: json
+    """
+
+
     data = request.get_json()
     hashed_password = generate_password_hash(data['password'], method='sha256')
 
@@ -94,8 +171,9 @@ def criar_cli():
         return jsonify({'message': 'Email ja existente'})
 
     new_user = User(name=data['name'], email=data['email'], age=data['age'],
-                    endereco=data['endereco'], password=hashed_password)
+                    password=hashed_password)
 
     session.add(new_user)
     session.commit()
-    return jsonify({'message':  'cliente criado'})
+    return jsonify({'info_message':  'cliente criado'})
+

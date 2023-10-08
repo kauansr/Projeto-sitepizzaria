@@ -18,13 +18,12 @@ class User(Base):
     id: int = Column(Integer, primary_key=True, nullable=False)
     email: str = Column(String(50), nullable=False, unique=True)
     name: str = Column(String(50), nullable=False)
-    endereco: str = Column(String(80), nullable=False)
     time_created: datetime = Column(DateTime, default=datetime.now)
     status_log: bool = Column(Boolean, default=False)
     age: str = Column(Integer, nullable=False)
     password: str = Column(String(80), nullable=False)
-    empresa = relationship('Empresa', backref='users')
-    pedido = relationship('Pedido', backref='pedidos')
+    empresa = relationship('Empresa', cascade='all,delete',backref='users')
+    pedido = relationship('Pedido',cascade='all,delete', backref='pedidos')
 
     def verifica_password(self, pwd):
         return check_password_hash(self.password, pwd)
@@ -32,27 +31,34 @@ class User(Base):
     def __str__(self) -> str:
         return self.name
 
-    def __init__(self, name, email, endereco, age, password) -> None:
+    def __init__(self, name, email,  age, password) -> None:
         self.name = name
         self.email = email
-        self.endereco = endereco
         self.age = age
         self.password = password
+    
+    def is_authenticated(self):
+        return True
+    
 
 
 class Empresa(Base):
     __tablename__ = 'empresa'
     id: int = Column(Integer, primary_key=True,
                      autoincrement=True, unique=True)
-    user_id: int = Column(Integer, ForeignKey(
+    user_id: str = Column(String, ForeignKey(
         'user.id', ondelete='CASCADE'), nullable=False)
-    empresa: str = Column(String(50))
-    cnpj: str = Column(String(20))
+    empresa: str = Column(String(50), nullable=False)
+    cnpj: str = Column(String(20), nullable=False)
+    is_admin: bool = Column(Boolean, default=False)
 
-    def __init__(self, empresa, cnpj, user_id) -> None:
+    def __init__(self, empresa, cnpj, user_id, is_admin) -> None:
         self.empresa = empresa
         self.cnpj = cnpj
         self.user_id = user_id
+        self.is_admin = is_admin
+    
+
 
 
 class Produtos(Base):
@@ -61,11 +67,10 @@ class Produtos(Base):
                      autoincrement=True, unique=True)
     produto_nome: str = Column(String(50))
     produto_preco: float = Column(Float)
-    quantidade: int = Column(Integer)
+    pedido_nome = relationship('Pedido', backref='produtos') 
 
-    def __init__(self, produto_nome, quantidade, produto_preco) -> None:
+    def __init__(self, produto_nome, produto_preco) -> None:
         self.produto_nome = produto_nome
-        self.quantidade = quantidade
         self.produto_preco = produto_preco
 
 
@@ -74,15 +79,17 @@ class Pedido(Base):
     id: int = Column(Integer, primary_key=True, nullable=False)
     email: str = Column(String(50), ForeignKey(
         'user.email', ondelete='CASCADE'), nullable=False)
+    pedido_nome: str = Column(String(50), ForeignKey(
+        'produtos.produto_nome', ondelete='CASCADE'
+    ), nullable=False)
     data_pedido: datetime = Column(DateTime, default=datetime.now)
-    quantidade: int = Column(Integer)
     status: str = Column(String(30),  nullable=False)
     frete: float = Column(Float)
     custo_total: float = Column(Float)
 
-    def __init__(self, email,  quantidade, status, frete, custo_total) -> None:
+    def __init__(self, email, pedido_nome, status, frete, custo_total) -> None:
         self.email = email
-        self.quantidade = quantidade
+        self.pedido_nome = pedido_nome
         self.status = status
         self.frete = frete
         self.custo_total = custo_total

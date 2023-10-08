@@ -4,6 +4,7 @@
 *.pyc
 __pycache__
 db.sqlite3
+pizzaria.db
 static/
 media/
 project/local_settings.py

@@ -1,0 +1,28 @@
+.post {
+    background-color: rgba(216, 215, 215, 0.315);
+    box-sizing: content-box;
+    border: solid rgb(214, 210, 210) 1px;
+    display: inline-flex;
+    padding: 5px;
+    width: 32.7%;
+    justify-content: space-between;
+
+
+}
+
+.post div {
+    width: 50%;
+    height: 100%;
+    display: block;
+
+
+
+}
+
+
+
+
+.post h3 {
+    text-decoration: none;
+
+}
