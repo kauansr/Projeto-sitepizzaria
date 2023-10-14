@@ -1,6 +1,6 @@
 # Projeto-sitepizzaria
-- Site feito em flask e react.js para uma pizzaria
-
+- Site de vendas focado na vendas de pizzas feita em python
+- Tecnologias utilizadas estão em requirements.txt
 
 ## Este projeto NÃO inclui
 Lista de recursos não adicionados:
