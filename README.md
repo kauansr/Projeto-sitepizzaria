@@ -6,6 +6,7 @@
 Lista de recursos não adicionados:
 
 - Metodos de pagamento
+- Imagem das pizzas
 - Calculo de frete
 - Calculo total de pedidos
 
